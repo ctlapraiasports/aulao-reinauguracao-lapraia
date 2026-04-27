@@ -325,9 +325,77 @@
     letter-spacing: 1px;
   }
 
+  /* Turmas */
+  .turmas-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .turma-card { position: relative; }
+  .turma-card input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+  .turma-card label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 12px;
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.02);
+    text-align: center;
+  }
+
+  .turma-card label .t-hora {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    color: var(--branco);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .turma-card label .t-nome {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #777;
+  }
+
+  .turma-card label .t-vagas {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #555;
+    letter-spacing: 1px;
+  }
+
+  .turma-card label .t-vagas.ok { color: var(--verde, #00c853); }
+  .turma-card label .t-vagas.quase { color: #ff9800; }
+  .turma-card label .t-vagas.cheia { color: #e55; }
+
+  .turma-card input:checked + label {
+    border-color: var(--amarelo);
+    background: rgba(245,200,0,0.08);
+    box-shadow: 0 0 0 3px rgba(245,200,0,0.1);
+  }
+
+  .turma-card input:checked + label .t-hora { color: var(--amarelo); }
+  .turma-card input:checked + label .t-nome { color: var(--amarelo); }
+
+  .turma-card.lotada label {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: rgba(255,255,255,0.04);
+  }
+
   @media (max-width: 480px) {
     .card { padding: 26px 18px; margin: 14px; }
     .row-2 { grid-template-columns: 1fr; }
+    .turmas-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -384,41 +452,9 @@
 
     <div class="divider"></div>
 
-    <div class="section-label">🏅 Modalidade</div>
+    <div class="section-label">🕐 Escolha sua turma</div>
 
-    <div class="modalidade-grid">
-      <div class="modalidade-card">
-        <input type="radio" name="modalidade" id="futevol" value="Futevôlei">
-        <label for="futevol">
-          <span class="icon">⚽</span>
-          <span class="nome">Futevôlei</span>
-        </label>
-      </div>
-      <div class="modalidade-card">
-        <input type="radio" name="modalidade" id="volei" value="Vôlei">
-        <label for="volei">
-          <span class="icon">🏐</span>
-          <span class="nome">Vôlei</span>
-        </label>
-      </div>
-    </div>
-
-    <div class="section-label">📊 Nível</div>
-
-    <div class="nivel-grid">
-      <div class="nivel-item">
-        <input type="radio" name="nivel" id="iniciante" value="Iniciante">
-        <label for="iniciante">🌱 Iniciante</label>
-      </div>
-      <div class="nivel-item">
-        <input type="radio" name="nivel" id="intermediario" value="Intermediário">
-        <label for="intermediario">⚡ Intermediário</label>
-      </div>
-      <div class="nivel-item">
-        <input type="radio" name="nivel" id="avancado" value="Avançado">
-        <label for="avancado">🔥 Avançado</label>
-      </div>
-    </div>
+    <div id="turmasContainer" class="turmas-grid"></div>
 
     <div class="divider"></div>
 
@@ -486,6 +522,38 @@
   const SENHA_ADMIN = 'Lapraia@2026';
   const inscritos = [];
   let adminLogado = false;
+
+  // Turmas com vagas
+  const TURMAS = [
+    { id: 't1', hora: '08:00', nome: 'Iniciante B/A', modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
+    { id: 't2', hora: '09:20', nome: 'Iniciante A+/Inter', modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
+    { id: 't3', hora: '10:40', nome: 'Feminino', modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
+    { id: 't4', hora: '15:00', nome: 'Vôlei', modalidade: 'Vôlei', vagas: 14, inscritos: 0 },
+  ];
+
+  function renderTurmas() {
+    const container = document.getElementById('turmasContainer');
+    container.innerHTML = TURMAS.map(t => {
+      const livres = t.vagas - t.inscritos;
+      const lotada = livres <= 0;
+      const vagasClass = livres <= 0 ? 'cheia' : livres <= 3 ? 'quase' : 'ok';
+      const vagasText = lotada ? '🔴 TURMA LOTADA' : livres <= 3 ? `⚡ ${livres} vaga${livres > 1 ? 's' : ''} restante${livres > 1 ? 's' : ''}` : `✅ ${livres} vagas disponíveis`;
+      const emoji = t.modalidade === 'Vôlei' ? '🏐' : '⚽';
+      return `
+        <div class="turma-card${lotada ? ' lotada' : ''}">
+          <input type="radio" name="turma" id="${t.id}" value="${t.id}"${lotada ? ' disabled' : ''}>
+          <label for="${t.id}">
+            <span style="font-size:1.6rem">${emoji}</span>
+            <span class="t-hora">${t.hora}</span>
+            <span class="t-nome">${t.nome}</span>
+            <span class="t-nome" style="color:#666;font-size:0.65rem">${t.modalidade}</span>
+            <span class="t-vagas ${vagasClass}">${vagasText}</span>
+          </label>
+        </div>`;
+    }).join('');
+  }
+
+  renderTurmas();
   // Máscara WhatsApp
   document.getElementById('whatsapp').addEventListener('input', function(e) {
     let v = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -502,34 +570,44 @@
     const genero = document.getElementById('genero').value;
     const whatsapp = document.getElementById('whatsapp').value.trim();
     const email = document.getElementById('email').value.trim();
-    const modalidade = document.querySelector('input[name="modalidade"]:checked');
-    const nivel = document.querySelector('input[name="nivel"]:checked');
+    const turmaSel = document.querySelector('input[name="turma"]:checked');
     const obs = document.getElementById('obs').value.trim();
 
-    if (!nome || !dataNasc || !genero || !whatsapp || !email || !modalidade || !nivel) {
+    if (!nome || !dataNasc || !genero || !whatsapp || !email || !turmaSel) {
       shake();
-      alert('Preencha todos os campos para confirmar sua inscrição! 😊');
+      alert('Preencha todos os campos e escolha uma turma! 😊');
       return;
     }
 
+    const turma = TURMAS.find(t => t.id === turmaSel.value);
+
+    if (turma.inscritos >= turma.vagas) {
+      alert('Essa turma acabou de lotar! Por favor escolha outra. 😥');
+      renderTurmas();
+      return;
+    }
+
+    turma.inscritos++;
+    renderTurmas();
+
     const registro = {
       nome, dataNasc, genero, whatsapp, email,
-      modalidade: modalidade.value, nivel: nivel.value, obs,
+      turma: `${turma.hora} – ${turma.nome}`,
+      modalidade: turma.modalidade,
+      obs,
       hora: new Date().toLocaleString('pt-BR')
     };
 
     inscritos.push(registro);
 
-    // Envia para Google Sheets se URL configurada
-    if (SHEET_URL) {
-      enviarParaSheet(registro);
-    }
+    if (SHEET_URL) { enviarParaSheet(registro); }
 
     document.getElementById('formContent').style.display = 'none';
     document.getElementById('successMsg').style.display = 'block';
     document.getElementById('successDetail').textContent =
-      `${nome}, sua inscrição em ${modalidade.value} (${nivel.value}) foi confirmada. Nos vemos no Aulão de Reinauguração! 🏆`;
+      `${nome}, sua inscrição na turma das ${turma.hora} (${turma.nome} – ${turma.modalidade}) foi confirmada. Nos vemos no Aulão! 🏆`;
 
+    if (adminLogado) renderRespostas();
   }
 
   // Envio para Google Sheets
@@ -614,8 +692,8 @@
           <span style="font-size:0.7rem;color:#555;">${i.hora}</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;">
-          <span style="background:rgba(245,200,0,0.12);color:var(--amarelo);font-size:0.72rem;font-weight:800;padding:2px 9px;border-radius:999px;">${i.modalidade}</span>
-          <span style="background:rgba(255,255,255,0.06);color:#ccc;font-size:0.72rem;font-weight:800;padding:2px 9px;border-radius:999px;">${i.nivel}</span>
+          <span style="background:rgba(245,200,0,0.12);color:var(--amarelo);font-size:0.72rem;font-weight:800;padding:2px 9px;border-radius:999px;">${i.turma}</span>
+          <span style="background:rgba(255,255,255,0.06);color:#ccc;font-size:0.72rem;font-weight:800;padding:2px 9px;border-radius:999px;">${i.modalidade}</span>
         </div>
         <div style="color:#777;font-size:0.78rem;margin-top:5px;">📱 ${i.whatsapp} &nbsp;|&nbsp; ✉️ ${i.email}</div>
         ${i.obs ? `<div style="color:#555;font-size:0.76rem;font-style:italic;margin-top:3px;">💬 ${i.obs}</div>` : ''}
@@ -625,41 +703,23 @@
 
   // Enviar comprovante via WhatsApp
   function enviarComprovante() {
-    const detalhe = document.getElementById('successDetail').textContent;
-    // Pega os dados do último inscrito
     const ultimo = inscritos[inscritos.length - 1];
     if (!ultimo) return;
 
     const msg =
-      `🏆 *COMPROVANTE DE INSCRIÇÃO*
-` +
-      `CT La Praia Sports — Aulão de Reinauguração
-
-` +
-      `👤 *Nome:* ${ultimo.nome}
-` +
-      `📅 *Data de nasc.:* ${ultimo.dataNasc}
-` +
-      `⚧️ *Gênero:* ${ultimo.genero}
-` +
-      `🏅 *Modalidade:* ${ultimo.modalidade}
-` +
-      `📊 *Nível:* ${ultimo.nivel}
-` +
-      `📱 *WhatsApp:* ${ultimo.whatsapp}
-` +
-      `✉️ *E-mail:* ${ultimo.email}
-` +
-      (ultimo.obs ? `💬 *Obs:* ${ultimo.obs}
-` : '') +
-      `🕐 *Horário:* ${ultimo.hora}
-
-` +
-      `✅ Inscrição confirmada! Te esperamos em quadra! 🏐⚽
-
-` +
-      `💰 *PAGAMENTO VIA PIX*
-` +
+      `🏆 *COMPROVANTE DE INSCRIÇÃO*\n` +
+      `CT La Praia Sports — Aulão de Reinauguração\n\n` +
+      `👤 *Nome:* ${ultimo.nome}\n` +
+      `📅 *Data de nasc.:* ${ultimo.dataNasc}\n` +
+      `⚧️ *Gênero:* ${ultimo.genero}\n` +
+      `🕐 *Turma:* ${ultimo.turma}\n` +
+      `🏅 *Modalidade:* ${ultimo.modalidade}\n` +
+      `📱 *WhatsApp:* ${ultimo.whatsapp}\n` +
+      `✉️ *E-mail:* ${ultimo.email}\n` +
+      (ultimo.obs ? `💬 *Obs:* ${ultimo.obs}\n` : '') +
+      `🗓️ *Inscrito em:* ${ultimo.hora}\n\n` +
+      `✅ Inscrição confirmada! Te esperamos em quadra! 🏐⚽\n\n` +
+      `💰 *PAGAMENTO VIA PIX*\n` +
       `Chave Pix (Telefone): (21) 97623-7777`;
 
     const numero = '5521976237777';
