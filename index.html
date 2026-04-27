@@ -557,16 +557,21 @@
     }).join('');
   }
 
-  // Carrega vagas reais da planilha
-  async function carregarVagas() {
-    const container = document.getElementById('turmasContainer');
-    container.innerHTML = '<p style="color:#666;text-align:center;padding:20px;font-size:0.85rem;">⏳ Carregando vagas...</p>';
-    try {
-      const resp = await fetch(SHEET_URL, { method: 'GET', mode: 'no-cors' });
-      // no-cors não retorna body, então usamos outra abordagem via JSONP/script
-    } catch(e) {}
-    // Tenta via fetch com redirect
-    carregarVagasScript();
+  // Carrega vagas reais da planilha via JSONP
+  function carregarVagasScript() {
+    window._vagasCallback = function(data) {
+      if (data && data.contagem) {
+        TURMAS.forEach(t => { t.inscritos = data.contagem[t.id] || 0; });
+      }
+      renderTurmas();
+    };
+    const s = document.createElement('script');
+    s.src = SHEET_URL + '?callback=_vagasCallback';
+    s.onerror = function() { renderTurmas(); };
+    document.head.appendChild(s);
+  }
+
+  carregarVagasScript();
   }
 
   function carregarVagasScript() {
