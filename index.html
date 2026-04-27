@@ -557,51 +557,21 @@
     }).join('');
   }
 
-  // Mostra turmas imediatamente, atualiza vagas em segundo plano
+  // Mostra turmas imediatamente
   renderTurmas();
 
-  function carregarVagasScript() {
-    window._vagasCallback = function(data) {
-      if (data && data.contagem) {
-        TURMAS.forEach(t => { t.inscritos = data.contagem[t.id] || 0; });
-        renderTurmas();
-      }
-    };
-    const s = document.createElement('script');
-    s.src = SHEET_URL + '?callback=_vagasCallback';
-    s.onerror = function() { /* já mostrou com renderTurmas() acima */ };
-    document.head.appendChild(s);
-  }
-
-  carregarVagasScript();
-  }
-
-  function carregarVagasScript() {
-    const script = document.createElement('script');
-    window._vagasCallback = function(data) {
-      if (data && data.contagem) {
-        TURMAS.forEach(t => {
-          t.inscritos = data.contagem[t.id] || 0;
-        });
-      }
+  // Atualiza vagas da planilha em segundo plano via JSONP
+  window._vagasCallback = function(data) {
+    if (data && data.contagem) {
+      TURMAS.forEach(t => { t.inscritos = data.contagem[t.id] || 0; });
       renderTurmas();
-      document.getElementById('loadingVagas') && (document.getElementById('loadingVagas').remove());
-    };
-    script.onerror = function() { renderTurmas(); };
-    // Fetch via XHR (funciona no GitHub Pages para Apps Script com CORS)
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', SHEET_URL + '?callback=_vagasCallback', true);
-    xhr.onload = function() {
-      try {
-        const data = JSON.parse(xhr.responseText);
-        window._vagasCallback(data);
-      } catch(e) { renderTurmas(); }
-    };
-    xhr.onerror = function() { renderTurmas(); };
-    xhr.send();
-  }
-
-  carregarVagasScript();
+    }
+  };
+  (function() {
+    var s = document.createElement('script');
+    s.src = SHEET_URL + '?callback=_vagasCallback';
+    document.head.appendChild(s);
+  })();
   // Máscara WhatsApp
   document.getElementById('whatsapp').addEventListener('input', function(e) {
     let v = e.target.value.replace(/\D/g, '').slice(0, 11);
