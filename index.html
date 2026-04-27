@@ -525,10 +525,10 @@
 
   // Turmas com vagas
   const TURMAS = [
-    { id: 't1', hora: '08:00', nome: 'Iniciante B/A', modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
+    { id: 't1', hora: '08:00', nome: 'Iniciante B/A',     modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
     { id: 't2', hora: '09:20', nome: 'Iniciante A+/Inter', modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
-    { id: 't3', hora: '10:40', nome: 'Feminino', modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
-    { id: 't4', hora: '15:00', nome: 'Vôlei', modalidade: 'Vôlei', vagas: 14, inscritos: 0 },
+    { id: 't3', hora: '10:40', nome: 'Feminino',           modalidade: 'Futevôlei', vagas: 14, inscritos: 0 },
+    { id: 't4', hora: '15:00', nome: 'Vôlei',              modalidade: 'Vôlei',     vagas: 14, inscritos: 0 },
   ];
 
   function renderTurmas() {
@@ -537,7 +537,11 @@
       const livres = t.vagas - t.inscritos;
       const lotada = livres <= 0;
       const vagasClass = livres <= 0 ? 'cheia' : livres <= 3 ? 'quase' : 'ok';
-      const vagasText = lotada ? '🔴 TURMA LOTADA' : livres <= 3 ? `⚡ ${livres} vaga${livres > 1 ? 's' : ''} restante${livres > 1 ? 's' : ''}` : `✅ ${livres} vagas disponíveis`;
+      const vagasText = lotada
+        ? '🔴 TURMA LOTADA'
+        : livres <= 3
+          ? `⚡ ${livres} vaga${livres > 1 ? 's' : ''} restante${livres > 1 ? 's' : ''}!`
+          : `✅ ${livres} vagas disponíveis`;
       const emoji = t.modalidade === 'Vôlei' ? '🏐' : '⚽';
       return `
         <div class="turma-card${lotada ? ' lotada' : ''}">
@@ -553,7 +557,44 @@
     }).join('');
   }
 
-  renderTurmas();
+  // Carrega vagas reais da planilha
+  async function carregarVagas() {
+    const container = document.getElementById('turmasContainer');
+    container.innerHTML = '<p style="color:#666;text-align:center;padding:20px;font-size:0.85rem;">⏳ Carregando vagas...</p>';
+    try {
+      const resp = await fetch(SHEET_URL, { method: 'GET', mode: 'no-cors' });
+      // no-cors não retorna body, então usamos outra abordagem via JSONP/script
+    } catch(e) {}
+    // Tenta via fetch com redirect
+    carregarVagasScript();
+  }
+
+  function carregarVagasScript() {
+    const script = document.createElement('script');
+    window._vagasCallback = function(data) {
+      if (data && data.contagem) {
+        TURMAS.forEach(t => {
+          t.inscritos = data.contagem[t.id] || 0;
+        });
+      }
+      renderTurmas();
+      document.getElementById('loadingVagas') && (document.getElementById('loadingVagas').remove());
+    };
+    script.onerror = function() { renderTurmas(); };
+    // Fetch via XHR (funciona no GitHub Pages para Apps Script com CORS)
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', SHEET_URL + '?callback=_vagasCallback', true);
+    xhr.onload = function() {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        window._vagasCallback(data);
+      } catch(e) { renderTurmas(); }
+    };
+    xhr.onerror = function() { renderTurmas(); };
+    xhr.send();
+  }
+
+  carregarVagasScript();
   // Máscara WhatsApp
   document.getElementById('whatsapp').addEventListener('input', function(e) {
     let v = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -592,6 +633,7 @@
 
     const registro = {
       nome, dataNasc, genero, whatsapp, email,
+      turmaId: turma.id,
       turma: `${turma.hora} – ${turma.nome}`,
       modalidade: turma.modalidade,
       obs,
