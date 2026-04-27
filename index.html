@@ -483,6 +483,9 @@
   // CONFIGURAÇÃO — cole a URL do Apps Script aqui
   // =============================================
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzYTVaoZtlFkW9LeK_QqIgp9pJzIjjBXSd76oVbMf_PRZH43mYYde7RjoygGCj9Iodr/exec';
+  const SENHA_ADMIN = 'Lapraia@2026';
+  const inscritos = [];
+  let adminLogado = false;
   // Máscara WhatsApp
   document.getElementById('whatsapp').addEventListener('input', function(e) {
     let v = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -568,6 +571,56 @@
       msg.style.display = 'inline';
       setTimeout(() => msg.style.display = 'none', 2500);
     });
+  }
+
+  // Painel admin toggle
+  function toggleSenhaPanel() {
+    const panel = document.getElementById('senhaPanel');
+    const arrow = document.getElementById('arrowAdmin');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    arrow.style.transform = open ? '' : 'rotate(180deg)';
+  }
+
+  // Verificar senha
+  function verificarSenha() {
+    const input = document.getElementById('senhaInput').value;
+    const erro = document.getElementById('senhaErro');
+    if (input === SENHA_ADMIN) {
+      adminLogado = true;
+      document.getElementById('senhaForm').style.display = 'none';
+      document.getElementById('adminContent').style.display = 'block';
+      renderRespostas();
+    } else {
+      erro.style.display = 'block';
+      document.getElementById('senhaInput').value = '';
+      setTimeout(() => { erro.style.display = 'none'; }, 2500);
+    }
+  }
+
+  // Renderizar inscrições
+  function renderRespostas() {
+    const lista = document.getElementById('respostasLista');
+    const total = document.getElementById('totalCount');
+    total.textContent = inscritos.length;
+    if (inscritos.length === 0) {
+      lista.innerHTML = '<p style="color:#555;font-size:0.85rem;text-align:center;padding:16px 0">Nenhuma inscrição ainda.</p>';
+      return;
+    }
+    lista.innerHTML = [...inscritos].reverse().map((i, idx) => `
+      <div style="border-bottom:1px solid rgba(255,255,255,0.05);padding:12px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="color:var(--amarelo);font-weight:800;font-size:0.92rem;">${inscritos.length - idx}. ${i.nome}</span>
+          <span style="font-size:0.7rem;color:#555;">${i.hora}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;">
+          <span style="background:rgba(245,200,0,0.12);color:var(--amarelo);font-size:0.72rem;font-weight:800;padding:2px 9px;border-radius:999px;">${i.modalidade}</span>
+          <span style="background:rgba(255,255,255,0.06);color:#ccc;font-size:0.72rem;font-weight:800;padding:2px 9px;border-radius:999px;">${i.nivel}</span>
+        </div>
+        <div style="color:#777;font-size:0.78rem;margin-top:5px;">📱 ${i.whatsapp} &nbsp;|&nbsp; ✉️ ${i.email}</div>
+        ${i.obs ? `<div style="color:#555;font-size:0.76rem;font-style:italic;margin-top:3px;">💬 ${i.obs}</div>` : ''}
+      </div>
+    `).join('');
   }
 
   // Enviar comprovante via WhatsApp
